@@ -1,6 +1,6 @@
 Using a Shannon Guesser and 2012 Party Platforms to Analyze Possible 2016 Presidential Candidates' Twitter Feeds 
 
-The modules required for this program are: requests_oauthlib, webbrowser, json, and test106
+The modules required for this program are: requests_oauthlib, webbrowser, and json.
 
 My program uses the twitter API to get the last 500 tweets of six different confirmed or possible 2016 presidential candidates, including:
 
