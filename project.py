@@ -1,29 +1,31 @@
 import requests_oauthlib
 import webbrowser
 import json
-import test106 as test
 
-####twitter client key and client secret
-client_key = 'zaPvoQyvecQPO7OxZ3ATfI336' 
-client_secret = 'ke1tnUg9A04gR5EcDF2Q6u3QtXXtgNnssu7trc2taUOXy4DCX8'
+####THE PROGRAM USER MUST REQUEST THEIR OWN CLIENT KEY AND SECRET
+####AND ENTER THEM BELOW IN ORDER FOR THE PROGRAM TO RUN!!!!
+####
+####twitter client key and client secret which can be generated at: https://apps.twitter.com/
+####
+##################
+##################
+##################
+client_key = '' 
+client_secret = ''
+##################
+##################
+##################
+
+
 
 ###instance of OAuth1Session with client keys
 oauth = requests_oauthlib.OAuth1Session(client_key,
                         client_secret=client_secret)
 
-#dictionaries of parameters for three democratic and three republican presidential candidates
-clinton = {'user_id': '1339835893', 'screen_name':'HillaryClinton'}
-omalley = {'user_id': '15824288', 'screen_name':'GovernorOMalley'}
-warren = {'user_id': '970207298', 'screen_name':'SenWarren'}
-
-cruz = {'user_id': '23022687', 'screen_name':'tedcruz'}
-bush = {'user_id': '113047940', 'screen_name':'JebBush'}
-paul = {'user_id': '216881337', 'screen_name':'RandPaul'}
-
 ####create a list of stop words that we can use multiple times 
 stop = open("stopwords.txt", "r")
 stop_words = stop.read().split()
-stop_words += ['&amp;', 'rt'] #get rid of these two commonly used twitter phrases
+stop_words += ['&amp;', 'rt'] #get rid of these two commonly used twitter character sets
 
 ###create string of democratic platform and republican platforms
 def collapse_whitespace(txt): #turns newlines and tabs into spaces and collapses multiple spaces
@@ -35,16 +37,17 @@ def collapse_whitespace(txt): #turns newlines and tabs into spaces and collapses
             res += c
         prev = c
     return res 
+
 ddat = open("demplatform.txt", 'r')
-dplat = collapse_whitespace(ddat.read()) #democratic platform
+dplat = collapse_whitespace(ddat.read()) #cleaned democratic platform
 ddat.close
 rdat = open("repplatform.txt", "r")
-rplat = collapse_whitespace(rdat.read()) #republican platform
+rplat = collapse_whitespace(rdat.read()) #cleaned republican platform
 rdat.close
 
-###accumulate top 50 words in each platform
+###accumulate top 50 words in each platform and store them in two lists
 def top_50w(string):
-    wrds = {}
+    wrds = {} #a dictionary that will store every word and the number of times used
     for i in string.split():
         i = i.lower()
         if not i in stop_words:
@@ -63,7 +66,7 @@ def list_of_tweets(polit_dict):
     max_id = None
     polit_dict['count'] = 100
     tweets = []
-    for i in range(5): #5 pages with 100 words each
+    for i in range(5): #Paging to exceed 200 tweet retreival max...5 pages with 100 words each
         if len(ids) > 0:
             polit_dict['max_id'] = min(ids) - 1
         r = oauth.get("https://api.twitter.com/1.1/statuses/user_timeline.json",
@@ -75,8 +78,6 @@ def list_of_tweets(polit_dict):
 
 def remove_non_ascii(txt): #gets rid of a string's non-ascii characters
     return ''.join(i for i in txt if ord(i)<128)
-test.testEqual(remove_non_ascii(u'a' + u'\xc2' + u'b'), u'ab')
-test.testEqual(remove_non_ascii(u'\xc2'), '')
  
 class Candidate: #each instance will be one candidate
     def __init__(self, cand, party_affil, twitter_dict):
@@ -89,14 +90,11 @@ class Candidate: #each instance will be one candidate
         all_tweets = list_of_tweets(self.dict)
         string_of_all_tweets = " ".join(all_tweets)
         return top_50w(string_of_all_tweets)
-    def string_of_tweets(self): #
+    def string_of_tweets(self): #one long string of all the candidates tweets
         all_tweets = list_of_tweets(self.dict)
         string_of_all_tweets = " ".join(all_tweets)
         string_of_all_tweets = str(remove_non_ascii(string_of_all_tweets))
         return string_of_all_tweets
-test_case = Candidate(cand = 'Barack Obama', party_affil='Democrat', twitter_dict={'user_id': '813286', 'screen_name':'BarackObama'})
-test.testEqual(test_case.handle, 'BarackObama')
-test.testEqual(type(test_case.top_50()), type([]))
 
         
 def overlap(cand): #how many words overlap with the party platform
@@ -115,20 +113,21 @@ def overlap(cand): #how many words overlap with the party platform
         return "error: incorrect party entry"
             
 #####create Shannon guesser
-def guesser(prev_txt, rls): #creating the guesser
+
+def guesser(prev_txt, rls): #body of the shannon guesser that will be called repeatedly and try to match up previous text with each rule
     all_guesses = ""
-    for (suffix, guesses) in rls:
+    for (suffix, guesses) in rls: #iterates through each of our two rules in order
         try:
             if suffix == None or prev_txt[-len(suffix):] == suffix:
                 all_guesses += guesses
         except:   
             pass 
-    return all_guesses    
+    return all_guesses  #returns a string of all the chracter guesses in order based on the rules
     
 def next_letter_frequencies(txt): #function to get a dictionary of next letter frequencies
     r = {} 
-    for i in range(len(txt)-1): 
-        if txt[i] not in r:
+    for i in range(len(txt)-1): #iterating through every character trying to guess the next, minus one because no next letter after last
+        if txt[i] not in r: 
             r[txt[i]] = {}
         next_letter_freqs = r[txt[i]]
         next_letter = txt[i+1]
@@ -136,8 +135,7 @@ def next_letter_frequencies(txt): #function to get a dictionary of next letter f
             next_letter_freqs[next_letter] = 1 
         else: 
             next_letter_freqs[next_letter] = next_letter_freqs[next_letter] + 1 
-    return r 
-test.testEqual(type(next_letter_frequencies('Hello my name is Dominic Russel')), type({}))   
+    return r   
     
 dem_letter_counts = next_letter_frequencies(dplat)
 rep_letter_counts = next_letter_frequencies(rplat)
@@ -148,7 +146,7 @@ def concat_all(L):
         res += s
     return res 
     
-def letter_rule(counts): #the letter rule we are going to use
+def letter_rule(counts): #the letter rule described in the readme. Takes a dictionary of counts and returns a 
     ltr_rls = []
     for i in counts:
         kys = counts[i].keys()       
@@ -163,9 +161,9 @@ ltr_rls_rep = letter_rule(rep_letter_counts) #letter rule with republican platfo
 
 def performance(txt, rls): 
     tot = 0
-    for i in range(len(txt)-1):
-        to_try = guesser(txt[:i+1], rls) 
-        guess_count = to_try.index(txt[i+1])
+    for i in range(len(txt)-1): #iterating through every character except last
+        to_try = guesser(txt[:i+1], rls) #creates string with every guess for next character in order
+        guess_count = to_try.index(txt[i+1]) #guess_count becomes the index of the to_try string that matches with actual next letter
         tot = tot + guess_count
     return float(tot)/len(txt) -1   
 
@@ -192,6 +190,17 @@ def shannon(cand):
     print "own party guesser took %.2f guesses per character, opposite party guesser took %.2f guesses per character" % (own_perf, opp_perf)
     return [own_perf , opp_perf - own_perf]
     
+
+
+#dictionaries of parameters for three democratic and three republican presidential candidates
+clinton = {'user_id': '1339835893', 'screen_name':'HillaryClinton'}
+omalley = {'user_id': '15824288', 'screen_name':'GovernorOMalley'}
+warren = {'user_id': '970207298', 'screen_name':'SenWarren'}
+
+cruz = {'user_id': '23022687', 'screen_name':'tedcruz'}
+bush = {'user_id': '113047940', 'screen_name':'JebBush'}
+paul = {'user_id': '216881337', 'screen_name':'RandPaul'}
+
 Cruz = Candidate(cand = 'Ted Cruz', party_affil = 'Republican', twitter_dict = cruz)
 Bush = Candidate(cand = 'Jeb Bush', party_affil = 'Republican', twitter_dict = bush)
 Paul = Candidate(cand= 'Rand Paul', party_affil = 'Republican', twitter_dict = paul)
